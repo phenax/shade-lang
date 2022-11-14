@@ -1,9 +1,24 @@
 module TestParser where
 
+import Data.Either (isLeft)
+import Parser (Expr (..), Identifier (..), Literal (..))
+import qualified Parser
 import Test.Hspec
+import Text.Megaparsec (ParseErrorBundle (ParseErrorBundle))
+import qualified Text.Megaparsec as MP
 
 test :: SpecWith ()
 test = do
-  describe "Prelude.head" $ do
-    it "returns the first element of a list" $ do
-      1 `shouldBe` 1
+  let p = MP.runParser Parser.parseExpression "mafile"
+
+  describe "parse literals" $ do
+    it "literals" $ do
+      p "823232" `shouldBe` Right (ELiteral $ LInt 823232)
+      p "\"hello world\"" `shouldBe` Right (ELiteral $ LString "hello world")
+
+  describe "parse identifiers" $ do
+    it "literals" $ do
+      p "hello" `shouldBe` Right (EVariable $ IVariable "hello")
+      p "h123" `shouldBe` Right (EVariable $ IVariable "h123")
+      p "12kashdl" `shouldBe` Right (EVariable $ IVariable "h123")
+      isLeft (p "12kashdl") `shouldBe` True
