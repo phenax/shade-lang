@@ -1,24 +1,13 @@
 module Parser where
 
+import Control.Monad (void)
 import Control.Monad.Combinators ((<|>))
-import Data.Void (Void)
+import Data.Foldable (Foldable (fold))
 import qualified Text.Megaparsec as MP
 import qualified Text.Megaparsec.Char as MP
+import qualified Text.Megaparsec.Char.Lexer as MPL
 import Text.Megaparsec.Error (ParseErrorBundle)
-
-type Parser = MP.Parsec Void String
-
-data Literal = LString String | LInt Int
-  deriving (Show, Eq)
-
-newtype Identifier = IVariable String
-  deriving (Show, Eq)
-
-data Expr
-  = ELiteral Literal
-  | ELambda Identifier Expr
-  | EVariable Identifier
-  deriving (Show, Eq)
+import Types
 
 parseInt :: Parser Int
 parseInt = read <$> MP.some MP.digitChar
@@ -29,19 +18,42 @@ parseString = do
   MP.manyTill MP.latin1Char (MP.char '"')
 
 parseLiteral :: Parser Literal
-parseLiteral = (LString <$> parseString) <|> (LInt <$> parseInt)
+parseLiteral = lexeme p
+  where
+    p = (LString <$> parseString) <|> (LInt <$> parseInt)
 
-parseIdent :: Parser String
-parseIdent = do
+parseIdent :: Parser (Identifier a)
+parseIdent = lexeme $ do
   first <- MP.letterChar
-  rest <- MP.some MP.alphaNumChar
-  pure $ first : rest
+  rest <- MP.many MP.alphaNumChar
+  pure $ Identifier $ first : rest
 
-parseVar :: Parser Identifier
-parseVar = IVariable <$> parseIdent
+parseVar :: Parser (Identifier 'VariableName)
+parseVar = parseIdent
+
+spaceConsumer :: Parser ()
+spaceConsumer =
+  MPL.space
+    MP.space1
+    (MPL.skipLineComment "--")
+    (MPL.skipBlockComment "/*" "*/")
+
+symbol = MPL.symbol spaceConsumer
+
+lexeme = MPL.lexeme spaceConsumer
+
+parseLambda :: Parser Expr
+parseLambda = lexeme $ do
+  _ <- symbol "\\"
+  idents <- MP.someTill parseVar (symbol "->")
+  body <- parseExpression
+  pure $ foldl (flip ELambda) body (reverse idents)
 
 parseExpression :: Parser Expr
-parseExpression = (EVariable <$> parseVar) <|> (ELiteral <$> parseLiteral)
+parseExpression =
+  parseLambda
+    <|> (EVariable <$> parseVar)
+    <|> (ELiteral <$> parseLiteral)
 
 -- parse :: String -> Either (ParseErrorBundle String Void) String
 -- parse = MP.runParser parseExpression "mafile"

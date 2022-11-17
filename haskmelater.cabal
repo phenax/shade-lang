@@ -17,6 +17,10 @@ common warnings
     ghc-options: -Wall
     build-depends:
         base ^>=4.15.1.0,
+    default-extensions:
+        DataKinds,
+        KindSignatures,
+        LambdaCase
 
 library
     import:           warnings
