@@ -34,7 +34,7 @@ parseVar = parseIdent
 spaceConsumer :: Parser ()
 spaceConsumer =
   MPL.space
-    MP.space1
+    (void $ MP.oneOf " \t")
     (MPL.skipLineComment "--")
     (MPL.skipBlockComment "/*" "*/")
 
@@ -52,7 +52,23 @@ parseLambda = lexeme $ do
   _ <- symbol "\\"
   idents <- MP.someTill parseVar (symbol "->")
   body <- parseExpression
-  pure $ foldl (flip ELambda) body (reverse idents)
+  pure $ foldr ELambda body idents
+
+argListP :: Parser e -> Parser [e]
+argListP argP = argListParser []
+  where
+    argListParser ls = do
+      optn <- MP.optional . MP.try $ spaceConsumer >> argP
+      spaceConsumer
+      case optn of
+        Nothing -> pure ls
+        Just p -> argListParser $ ls ++ [p]
+
+parseApply :: Parser Expr
+parseApply = lexeme $ do
+  fn <- parseExprWithoutApply
+  args <- argListP parseExprWithoutApply
+  pure $ foldl EApply fn args
 
 parseRawExpr :: Parser Expr
 parseRawExpr =
@@ -60,8 +76,11 @@ parseRawExpr =
     <|> (EVariable <$> parseVar)
     <|> (ELiteral <$> parseLiteral)
 
+parseExprWithoutApply :: Parser Expr
+parseExprWithoutApply = parens parseApply <|> parseRawExpr <|> parseRawExpr
+
 parseExpression :: Parser Expr
-parseExpression = parens parseRawExpr <|> parseRawExpr
+parseExpression = parseApply <|> parseExprWithoutApply
 
 -- parse :: String -> Either (ParseErrorBundle String Void) String
 -- parse = MP.runParser parseExpression "mafile"
