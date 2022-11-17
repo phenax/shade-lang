@@ -15,6 +15,7 @@ test = do
     it "literals" $ do
       p "823232" `shouldBe` Right (ELiteral $ LInt 823232)
       p "\"hello world\"" `shouldBe` Right (ELiteral $ LString "hello world")
+      p "\"\"" `shouldBe` Right (ELiteral $ LString "")
 
   describe "parse identifiers" $ do
     it "vars" $ do
@@ -23,9 +24,17 @@ test = do
       p "x" `shouldBe` Right (EVariable $ Identifier "x")
       p "x " `shouldBe` Right (EVariable $ Identifier "x")
       isLeft (p "12kashdl") `shouldBe` True
+    it "with parens" $ do
+      p "(hello)" `shouldBe` Right (EVariable $ Identifier "hello")
+      p "(x)" `shouldBe` Right (EVariable $ Identifier "x")
+      p "( y )" `shouldBe` Right (EVariable $ Identifier "y")
+      isLeft (p "(12kjqhkdj)") `shouldBe` True
 
   describe "parse lambda" $ do
     runIO $ putStrLn $ fromLeft "" $ p "\\x -> 5"
     it "lambda" $ do
       p "\\x -> 5" `shouldBe` Right (ELambda (Identifier "x") (ELiteral $ LInt 5))
       p "\\x y -> 5" `shouldBe` Right (ELambda (Identifier "x") (ELambda (Identifier "y") (ELiteral $ LInt 5)))
+    it "with parens" $ do
+      p "\\x -> (5)" `shouldBe` Right (ELambda (Identifier "x") (ELiteral $ LInt 5))
+      p "(\\x y -> 5)" `shouldBe` Right (ELambda (Identifier "x") (ELambda (Identifier "y") (ELiteral $ LInt 5)))

@@ -38,9 +38,14 @@ spaceConsumer =
     (MPL.skipLineComment "--")
     (MPL.skipBlockComment "/*" "*/")
 
+symbol :: String -> Parser String
 symbol = MPL.symbol spaceConsumer
 
+lexeme :: Parser a -> Parser a
 lexeme = MPL.lexeme spaceConsumer
+
+parens :: Parser a -> Parser a
+parens = MP.between (symbol "(") (symbol ")")
 
 parseLambda :: Parser Expr
 parseLambda = lexeme $ do
@@ -49,19 +54,14 @@ parseLambda = lexeme $ do
   body <- parseExpression
   pure $ foldl (flip ELambda) body (reverse idents)
 
-parseExpression :: Parser Expr
-parseExpression =
+parseRawExpr :: Parser Expr
+parseRawExpr =
   parseLambda
     <|> (EVariable <$> parseVar)
     <|> (ELiteral <$> parseLiteral)
 
+parseExpression :: Parser Expr
+parseExpression = parens parseRawExpr <|> parseRawExpr
+
 -- parse :: String -> Either (ParseErrorBundle String Void) String
 -- parse = MP.runParser parseExpression "mafile"
-
--- Expression
--- Blocks
---
--- hello : String
--- hello = "whatever"
---
--- main = print "wow"
