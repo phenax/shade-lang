@@ -15,15 +15,19 @@ extra-doc-files:    CHANGELOG.md
 
 common warnings
     ghc-options: -Wall
+    build-depends:
+        base ^>=4.15.1.0,
 
 library
     import:           warnings
-    exposed-modules:  Parser
+    exposed-modules:
+        Parser,
+        Types
     -- other-modules:
     -- other-extensions:
     build-depends:   
-        base ^>=4.15.1.0,
-        megaparsec
+        megaparsec,
+        parser-combinators
     hs-source-dirs:   src
     default-language: Haskell2010
 
@@ -33,7 +37,6 @@ executable haskmelater
     -- other-modules:
     -- other-extensions:
     build-depends:
-        base ^>=4.15,
         haskmelater
 
     hs-source-dirs:   app
@@ -48,7 +51,6 @@ test-suite haskmelater-test
     hs-source-dirs:   test
     main-is:          Main.hs
     build-depends:
-        base ^>=4.15,
         hspec,
         megaparsec,
         haskmelater

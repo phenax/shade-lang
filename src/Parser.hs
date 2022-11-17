@@ -1,6 +1,6 @@
 module Parser where
 
-import Control.Applicative ((<|>))
+import Control.Monad.Combinators ((<|>))
 import Data.Void (Void)
 import qualified Text.Megaparsec as MP
 import qualified Text.Megaparsec.Char as MP
@@ -29,7 +29,7 @@ parseString = do
   MP.manyTill MP.latin1Char (MP.char '"')
 
 parseLiteral :: Parser Literal
-parseLiteral = (LInt <$> parseInt) <|> (LString <$> parseString)
+parseLiteral = (LString <$> parseString) <|> (LInt <$> parseInt)
 
 parseIdent :: Parser String
 parseIdent = do

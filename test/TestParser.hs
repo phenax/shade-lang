@@ -9,7 +9,7 @@ import qualified Text.Megaparsec as MP
 
 test :: SpecWith ()
 test = do
-  let p = MP.runParser Parser.parseExpression "mafile"
+  let p = MP.runParser (do e <- Parser.parseExpression; MP.eof; pure e) "mafile"
 
   describe "parse literals" $ do
     it "literals" $ do
@@ -20,5 +20,4 @@ test = do
     it "literals" $ do
       p "hello" `shouldBe` Right (EVariable $ IVariable "hello")
       p "h123" `shouldBe` Right (EVariable $ IVariable "h123")
-      p "12kashdl" `shouldBe` Right (EVariable $ IVariable "h123")
       isLeft (p "12kashdl") `shouldBe` True
