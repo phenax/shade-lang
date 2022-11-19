@@ -18,4 +18,5 @@ data Expr
   | ELambda (Identifier 'VariableName) Expr
   | EApply Expr Expr
   | EVariable (Identifier 'VariableName)
+  | EUnit
   deriving (Show, Eq)

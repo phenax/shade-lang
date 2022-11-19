@@ -5,6 +5,7 @@ import Data.Either (fromLeft, isLeft)
 import qualified Parser
 import Test.Hspec
 import qualified Text.Megaparsec as MP
+import Text.RawString.QQ (r)
 import Types (Expr (..), Identifier (..), Literal (..))
 
 (~~>) :: String -> Expr -> Expr
@@ -50,8 +51,8 @@ test = do
       p "(\\x y -> 5)" `shouldBe` Right ("x" ~~> ELambda (Identifier "y") (ELiteral $ LInt 5))
 
   describe "parse apply" $ do
-    runIO $ putStrLn $ fromLeft "" $ p "hello 1 2"
-    it "should do stuff" $ do
+    -- runIO $ putStrLn $ fromLeft "" $ p "hello 1 2"
+    it "apply" $ do
       p "hello 1 2"
         `shouldBe` Right
           ( EVariable (Identifier "hello")
@@ -68,6 +69,24 @@ test = do
         `shouldBe` Right
           ( var "hello"
               `apply` ("x" ~~> var "x")
+              `apply` ELiteral (LInt 2)
+          )
+    runIO $
+      print $
+        [r|
+          hello
+1
+2
+          |]
+    fit "with indents" $ do
+      p
+        [r|     hello
+1
+2
+          |]
+        `shouldBe` Right
+          ( EVariable (Identifier "hello")
+              `apply` ELiteral (LInt 1)
               `apply` ELiteral (LInt 2)
           )
 

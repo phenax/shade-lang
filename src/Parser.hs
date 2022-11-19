@@ -3,6 +3,7 @@ module Parser where
 import Control.Monad (void)
 import Control.Monad.Combinators ((<|>))
 import Data.Foldable (Foldable (fold))
+import Debug.Trace (trace)
 import qualified Text.Megaparsec as MP
 import qualified Text.Megaparsec.Char as MP
 import qualified Text.Megaparsec.Char.Lexer as MPL
@@ -31,18 +32,25 @@ parseIdent = lexeme $ do
 parseVar :: Parser (Identifier 'VariableName)
 parseVar = parseIdent
 
-spaceConsumer :: Parser ()
-spaceConsumer =
+scnl :: Parser ()
+scnl =
+  MPL.space
+    (void MP.spaceChar)
+    (MPL.skipLineComment "--")
+    (MPL.skipBlockComment "/*" "*/")
+
+sc :: Parser ()
+sc =
   MPL.space
     (void $ MP.oneOf " \t")
     (MPL.skipLineComment "--")
     (MPL.skipBlockComment "/*" "*/")
 
 symbol :: String -> Parser String
-symbol = MPL.symbol spaceConsumer
+symbol = MPL.symbol scnl
 
 lexeme :: Parser a -> Parser a
-lexeme = MPL.lexeme spaceConsumer
+lexeme = MPL.lexeme scnl
 
 parens :: Parser a -> Parser a
 parens = MP.between (symbol "(") (symbol ")")
@@ -54,30 +62,39 @@ parseLambda = lexeme $ do
   body <- parseExpression
   pure $ foldr ELambda body idents
 
-argListP :: Parser e -> Parser [e]
-argListP argP = argListParser []
+argListP :: Parser e -> Parser () -> Parser [e]
+argListP argP spaceConsumer = argListParser []
   where
     argListParser ls = do
       optn <- MP.optional . MP.try $ spaceConsumer >> argP
-      spaceConsumer
+      -- scnl
       case optn of
         Nothing -> pure ls
         Just p -> argListParser $ ls ++ [p]
 
+withIndentGuard :: (Parser () -> Parser a) -> Parser a
+withIndentGuard fn = do
+  level <- MPL.indentLevel
+  trace (show level) (pure ())
+  let sc' = void $ MPL.indentGuard sc GT level
+  fn sc'
+
 parseApply :: Parser Expr
-parseApply = lexeme $ do
-  fn <- parseExprWithoutApply
-  args <- argListP parseExprWithoutApply
+parseApply = withIndentGuard $ \spaceConsumer -> do
+  fn <- scnl >> parseExprWithoutApply
+  args <- argListP parseExprWithoutApply spaceConsumer
   pure $ foldl EApply fn args
 
 parseRawExpr :: Parser Expr
-parseRawExpr =
-  parseLambda
-    <|> (EVariable <$> parseVar)
-    <|> (ELiteral <$> parseLiteral)
+parseRawExpr = parens (parseApply <|> p) <|> p
+  where
+    p =
+      parseLambda
+        <|> (EVariable <$> parseVar)
+        <|> (ELiteral <$> parseLiteral)
 
 parseExprWithoutApply :: Parser Expr
-parseExprWithoutApply = parens parseApply <|> parseRawExpr <|> parseRawExpr
+parseExprWithoutApply = parseRawExpr
 
 parseExpression :: Parser Expr
 parseExpression = parseApply <|> parseExprWithoutApply
