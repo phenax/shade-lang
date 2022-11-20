@@ -20,7 +20,8 @@ common warnings
     default-extensions:
         DataKinds,
         KindSignatures,
-        LambdaCase
+        LambdaCase,
+        QuasiQuotes
 
 library
     import:           warnings
@@ -57,4 +58,5 @@ test-suite haskmelater-test
     build-depends:
         hspec,
         megaparsec,
+        raw-strings-qq,
         haskmelater

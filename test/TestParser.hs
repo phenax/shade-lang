@@ -71,18 +71,12 @@ test = do
               `apply` ("x" ~~> var "x")
               `apply` ELiteral (LInt 2)
           )
-    runIO $
-      print $
-        [r|
-          hello
-1
-2
-          |]
-    fit "with indents" $ do
+    it "with indents" $ do
       p
-        [r|     hello
-1
-2
+        [r|
+  hello
+    1
+    2
           |]
         `shouldBe` Right
           ( EVariable (Identifier "hello")

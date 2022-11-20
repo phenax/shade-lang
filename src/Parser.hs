@@ -74,6 +74,7 @@ argListP argP spaceConsumer = argListParser []
 
 withIndentGuard :: (Parser () -> Parser a) -> Parser a
 withIndentGuard fn = do
+  scnl
   level <- MPL.indentLevel
   trace (show level) (pure ())
   let sc' = void $ MPL.indentGuard sc GT level
@@ -81,7 +82,7 @@ withIndentGuard fn = do
 
 parseApply :: Parser Expr
 parseApply = withIndentGuard $ \spaceConsumer -> do
-  fn <- scnl >> parseExprWithoutApply
+  fn <- parseExprWithoutApply
   args <- argListP parseExprWithoutApply spaceConsumer
   pure $ foldl EApply fn args
 
@@ -97,7 +98,7 @@ parseExprWithoutApply :: Parser Expr
 parseExprWithoutApply = parseRawExpr
 
 parseExpression :: Parser Expr
-parseExpression = parseApply <|> parseExprWithoutApply
+parseExpression = (parseApply <|> parseExprWithoutApply) <* scnl
 
 -- parse :: String -> Either (ParseErrorBundle String Void) String
 -- parse = MP.runParser parseExpression "mafile"
