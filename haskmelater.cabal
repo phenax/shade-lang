@@ -14,9 +14,11 @@ extra-doc-files:    CHANGELOG.md
 -- extra-source-files:
 
 common warnings
-    ghc-options: -Wall -fno-warn-orphans -fno-missing-home-modules
+    ghc-options: -Wall -fno-warn-orphans
     build-depends:
         base ^>=4.15.1.0,
+        containers,
+        mtl
     default-extensions:
         DataKinds,
         KindSignatures,
@@ -29,6 +31,7 @@ library
     import:           warnings
     exposed-modules:
         Syntax.Parser,
+        TypeChecker.Infer,
         Types
     -- other-modules:
     -- other-extensions:
