@@ -2,7 +2,7 @@ module TestParser where
 
 import Data.Bifunctor (first)
 import Data.Either (fromLeft, isLeft)
-import qualified Parser
+import qualified Syntax.Parser as Parser
 import Test.Hspec
 import qualified Text.Megaparsec as MP
 import Text.RawString.QQ (r)
@@ -36,7 +36,7 @@ test = do
       p "x" `shouldBe` Right (EVariable $ Identifier "x")
       p "x " `shouldBe` Right (EVariable $ Identifier "x")
     -- isLeft (p "12kashdl") `shouldBe` True
-    it "with parens" $ do
+
       p "(hello)" `shouldBe` Right (EVariable $ Identifier "hello")
       p "(x)" `shouldBe` Right (EVariable $ Identifier "x")
       p "( y )" `shouldBe` Right (EVariable $ Identifier "y")

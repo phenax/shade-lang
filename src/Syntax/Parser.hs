@@ -1,36 +1,34 @@
-module Parser where
+module Syntax.Parser where
 
 import Control.Monad (void)
 import Control.Monad.Combinators ((<|>))
 import Data.Foldable (Foldable (fold))
 import Debug.Trace (trace)
+import Syntax.Utils
 import qualified Text.Megaparsec as MP
 import qualified Text.Megaparsec.Char as MP
 import qualified Text.Megaparsec.Char.Lexer as MPL
 import Text.Megaparsec.Error (ParseErrorBundle)
 import Types
 
-parseInt :: Parser Int
-parseInt = read <$> MP.some MP.digitChar
+instance Parsable Int where
+  parse = read <$> MP.some MP.digitChar
 
-parseString :: Parser String
-parseString = do
-  _ <- MP.char '"'
-  MP.manyTill MP.latin1Char (MP.char '"')
+instance Parsable String where
+  parse = do
+    _ <- MP.char '"'
+    MP.manyTill MP.latin1Char (MP.char '"')
 
-parseLiteral :: Parser Literal
-parseLiteral = lexeme p
-  where
-    p = (LString <$> parseString) <|> (LInt <$> parseInt)
+instance Parsable Literal where
+  parse = lexeme p
+    where
+      p = (LString <$> parse) <|> (LInt <$> parse)
 
-parseIdent :: Parser (Identifier a)
-parseIdent = lexeme $ do
-  first <- MP.letterChar
-  rest <- MP.many MP.alphaNumChar
-  pure $ Identifier $ first : rest
-
-parseVar :: Parser (Identifier 'VariableName)
-parseVar = parseIdent
+instance Parsable (Identifier 'VariableName) where
+  parse = lexeme $ do
+    first <- MP.letterChar
+    rest <- MP.many MP.alphaNumChar
+    pure $ Identifier $ first : rest
 
 scnl :: Parser ()
 scnl =
@@ -58,7 +56,7 @@ parens = MP.between (symbol "(") (symbol ")")
 parseLambda :: Parser Expr
 parseLambda = lexeme $ do
   _ <- symbol "\\"
-  idents <- MP.someTill parseVar (symbol "->")
+  idents <- MP.someTill parse (symbol "->")
   body <- parseExpression
   pure $ foldr ELambda body idents
 
@@ -91,8 +89,8 @@ parseRawExpr = parens (parseApply <|> p) <|> p
   where
     p =
       parseLambda
-        <|> (EVariable <$> parseVar)
-        <|> (ELiteral <$> parseLiteral)
+        <|> (EVariable <$> (parse :: Parser (Identifier 'VariableName)))
+        <|> (ELiteral <$> parse)
 
 parseExprWithoutApply :: Parser Expr
 parseExprWithoutApply = parseRawExpr
