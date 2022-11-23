@@ -21,6 +21,7 @@ data Expr
   | ELambda (Identifier 'VariableName) Expr
   | EApply Expr Expr
   | EVariable (Identifier 'VariableName)
+  | EIfElse Expr Expr Expr
   deriving (Show, Eq)
 
 data Type

@@ -73,7 +73,7 @@ ti env exp@(EApply fn arg) =
     (s2, targ) <- ti (apply s1 env) arg
     s3 <- unify (apply s2 tfn) (TLambda targ tv)
     return (s3 `composeSubst` s2 `composeSubst` s1, apply s3 tv)
-      `catchError` \e -> throwError $ e ++ "\n in " ++ show exp
+    `catchError` \e -> throwError $ e ++ "\n in " ++ show exp
 ti env exp = undefined
 
 typeInference :: TypeEnv -> Expr -> TIMonad Type

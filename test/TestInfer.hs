@@ -27,3 +27,8 @@ test = do
       let e = "foo" ~~> EVariable (Identifier "foo")
       let env = TypeEnv Map.empty
       infer env e `shouldReturn` Right (TVariable "a0" `TLambda` TVariable "a0")
+
+    it "should do shit" $ do
+      let e = ("x" ~~> EVariable (Identifier "x")) `EApply` ELiteral (LInt 5)
+      let env = TypeEnv Map.empty
+      infer env e `shouldReturn` Right TInt

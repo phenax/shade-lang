@@ -42,7 +42,13 @@ test = do
       p "(hello)" `shouldBe` Right (EVariable $ Identifier "hello")
       p "(x)" `shouldBe` Right (EVariable $ Identifier "x")
       p "( y )" `shouldBe` Right (EVariable $ Identifier "y")
-  -- isLeft (p "(12kjqhkdj)") `shouldBe` True
+      p "elseFoobar" `shouldBe` Right (EVariable $ Identifier "elseFoobar")
+    -- isLeft (p "(12kjqhkdj)") `shouldBe` True
+    it "sad :(" $ do
+      isLeft (p "if") `shouldBe` True
+      isLeft (p "then") `shouldBe` True
+      isLeft (p "else") `shouldBe` True
+      isLeft (p "else") `shouldBe` True
 
   describe "parse lambda" $ do
     it "lambda" $ do
@@ -51,6 +57,68 @@ test = do
     it "with parens" $ do
       p "\\x -> (5)" `shouldBe` Right ("x" ~~> ELiteral (LInt 5))
       p "(\\x y -> 5)" `shouldBe` Right ("x" ~~> ELambda (Identifier "y") (ELiteral $ LInt 5))
+
+  describe "ifelse" $ do
+    runIO $
+      putStrLn $
+        fromLeft "------" $
+          p
+            [r|
+        if True then
+          "yes"
+        else
+          "no"
+        |]
+    it "ifelse" $ do
+      p
+        [r| if True then "yes" else "no" |]
+        `shouldBe` Right
+          ( EIfElse
+              (ELiteral $ LBool True)
+              (ELiteral $ LString "yes")
+              (ELiteral $ LString "no")
+          )
+      p
+        [r|
+          if True then
+            "yes"
+          else
+            "no"
+        |]
+        `shouldBe` Right
+          ( EIfElse
+              (ELiteral $ LBool True)
+              (ELiteral $ LString "yes")
+              (ELiteral $ LString "no")
+          )
+      p
+        [r|
+          if
+  True
+          then
+            "yes"
+          else
+            "no"
+        |]
+        `shouldBe` Right
+          ( EIfElse
+              (ELiteral $ LBool True)
+              (ELiteral $ LString "yes")
+              (ELiteral $ LString "no")
+          )
+    it "sad :(" $ do
+      isLeft
+        ( p
+            [r|
+          if True then
+          "yes"
+          else "no"
+        |]
+        )
+        `shouldBe` True
+      isLeft (p [r| if True |]) `shouldBe` True
+      isLeft (p [r| if True then |]) `shouldBe` True
+      isLeft (p [r| if True then True |]) `shouldBe` True
 
   describe "parse apply" $ do
     -- runIO $ putStrLn $ fromLeft "" $ p "hello 1 2"

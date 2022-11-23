@@ -14,7 +14,7 @@ extra-doc-files:    CHANGELOG.md
 -- extra-source-files:
 
 common warnings
-    ghc-options: -Wall -fno-warn-orphans
+    ghc-options: -Wall -fno-warn-orphans -fno-warn-unused-do-bind
     build-depends:
         base ^>=4.15.1.0,
         containers,

@@ -3,6 +3,7 @@ module Syntax.Parser where
 import Control.Monad (void)
 import Control.Monad.Combinators ((<|>))
 import Data.Foldable (Foldable (fold))
+import qualified Data.Set as Set
 import Debug.Trace (trace)
 import Syntax.Utils
 import qualified Text.Megaparsec as MP
@@ -27,11 +28,22 @@ instance Parsable Literal where
     where
       p = (LString <$> parse) <|> (LInt <$> parse) <|> (LBool <$> parse)
 
+reservedKeywords :: [String]
+reservedKeywords =
+  [ "if",
+    "then",
+    "let",
+    "else"
+  ]
+
 instance Parsable (Identifier 'VariableName) where
   parse = lexeme $ do
     first <- MP.letterChar
     rest <- MP.many MP.alphaNumChar
-    pure $ Identifier $ first : rest
+    let varName = first : rest
+    if varName `elem` reservedKeywords
+      then MP.parseError . MP.FancyError 69 . Set.singleton $ MP.ErrorFail "FAAIIILL"
+      else pure $ Identifier varName
 
 scnl :: Parser ()
 scnl =
@@ -77,7 +89,6 @@ withIndentGuard :: (Parser () -> Parser a) -> Parser a
 withIndentGuard fn = do
   scnl
   level <- MPL.indentLevel
-  trace (show level) (pure ())
   let sc' = void $ MPL.indentGuard sc GT level
   fn sc'
 
@@ -87,11 +98,22 @@ parseApply = withIndentGuard $ \spaceConsumer -> do
   args <- argListP parseExprWithoutApply spaceConsumer
   pure $ foldl EApply fn args
 
+parseIfElse :: Parser Expr
+parseIfElse = withIndentGuard $ \spaceConsumer -> do
+  symbol "if"
+  cond <- scnl >> parseExpression
+  symbol "then"
+  thenE <- spaceConsumer >> parseExpression
+  symbol "else"
+  elseE <- spaceConsumer >> parseExpression
+  pure $ EIfElse cond thenE elseE
+
 parseRawExpr :: Parser Expr
 parseRawExpr = parens (parseApply <|> p) <|> p
   where
     p =
       parseLambda
+        <|> parseIfElse
         <|> (ELiteral <$> parse)
         <|> (EVariable <$> (parse :: Parser (Identifier 'VariableName)))
 
