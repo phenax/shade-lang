@@ -1,6 +1,6 @@
 module TestInfer where
 
-import Data.Either (isLeft)
+import Data.Either (fromLeft, isLeft)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Test.Hspec

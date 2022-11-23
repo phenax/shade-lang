@@ -76,16 +76,18 @@ ti env expr@(EApply fn arg) =
     s3 <- unify (apply s2 tfn) (TLambda targ tv)
     return (s3 `composeSubst` s2 `composeSubst` s1, apply s3 tv)
     `catchError` \e -> throwError $ e ++ "\n in " ++ show expr
-ti env (EIfElse cond thenE elseE) = do
-  (sCond, tCond) <- ti env cond
-  unify TBool (apply sCond tCond)
-    `catchError` (\e -> throwError $ e ++ "\n in " ++ show cond)
+ti env expr@(EIfElse cond thenE elseE) =
+  do
+    (sCond, tCond) <- ti env cond
+    unify TBool (apply sCond tCond)
+      `catchError` (\e -> throwError $ e ++ "\n in " ++ show cond)
 
-  (sThen, tThen) <- ti env thenE
-  (_sElse, tElse) <- ti env elseE
+    (sThen, tThen) <- ti env thenE
+    (_sElse, tElse) <- ti env elseE
 
-  subst <- unify tThen (apply sThen tElse)
-  pure (Map.empty, apply subst tThen)
+    subst <- unify tThen (apply sThen tElse)
+    pure (Map.empty, apply subst tThen)
+    `catchError` (\e -> throwError $ e ++ "\n in " ++ show expr)
 
 typeInference :: TypeEnv -> Expr -> TIMonad Type
 typeInference (TypeEnv env) e =
