@@ -1,5 +1,6 @@
 module TestInfer where
 
+import Data.Either (isLeft)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Test.Hspec
@@ -63,3 +64,24 @@ test = do
                   (Identifier "elseE", Scheme [] $ TString `TLambda` TInt)
                 ]
       infer env e `shouldReturn` Right (TLambda TString TInt)
+    it "sad :(" $ do
+      let e =
+            EIfElse
+              (ELiteral (LString "foobar"))
+              (ELiteral (LString "foobar"))
+              (ELiteral (LString "foobar"))
+      isLeft <$> infer (TypeEnv Map.empty) e `shouldReturn` True
+    it "sad :(" $ do
+      let e =
+            EIfElse
+              (ELiteral (LBool True))
+              (ELiteral (LString "foobar"))
+              (ELiteral (LInt 5))
+      isLeft <$> infer (TypeEnv Map.empty) e `shouldReturn` True
+    it "sad :(" $ do
+      let e =
+            EIfElse
+              (ELiteral (LBool True))
+              (ELiteral (LInt 5))
+              (ELiteral (LString "foobar"))
+      isLeft <$> infer (TypeEnv Map.empty) e `shouldReturn` True

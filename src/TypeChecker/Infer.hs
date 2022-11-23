@@ -79,6 +79,7 @@ ti env expr@(EApply fn arg) =
 ti env (EIfElse cond thenE elseE) = do
   (sCond, tCond) <- ti env cond
   unify TBool (apply sCond tCond)
+    `catchError` (\e -> throwError $ e ++ "\n in " ++ show cond)
 
   (sThen, tThen) <- ti env thenE
   (_sElse, tElse) <- ti env elseE
