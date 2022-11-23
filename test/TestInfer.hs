@@ -5,6 +5,7 @@ import qualified Data.Set as Set
 import Test.Hspec
 import Text.RawString.QQ (r)
 import TypeChecker.Infer
+import TypeChecker.TIMonad
 import Types
 
 (~~>) :: String -> Expr -> Expr

@@ -19,10 +19,13 @@ instance Parsable String where
     _ <- MP.char '"'
     MP.manyTill MP.latin1Char (MP.char '"')
 
+instance Parsable Bool where
+  parse = (True <$ symbol "True") <|> (False <$ symbol "False")
+
 instance Parsable Literal where
   parse = lexeme p
     where
-      p = (LString <$> parse) <|> (LInt <$> parse)
+      p = (LString <$> parse) <|> (LInt <$> parse) <|> (LBool <$> parse)
 
 instance Parsable (Identifier 'VariableName) where
   parse = lexeme $ do
@@ -89,8 +92,8 @@ parseRawExpr = parens (parseApply <|> p) <|> p
   where
     p =
       parseLambda
-        <|> (EVariable <$> (parse :: Parser (Identifier 'VariableName)))
         <|> (ELiteral <$> parse)
+        <|> (EVariable <$> (parse :: Parser (Identifier 'VariableName)))
 
 parseExprWithoutApply :: Parser Expr
 parseExprWithoutApply = parseRawExpr

@@ -1,19 +1,19 @@
 module Types where
 
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Void (Void)
 import qualified Text.Megaparsec as MP
-import qualified Data.Set as Set
-import qualified Data.Map as Map
 
 type Parser = MP.Parsec Void String
 
-data Literal = LString String | LInt Int
+data Literal = LString String | LInt Int | LBool Bool | LUnit
   deriving (Show, Eq)
 
 data IdentifierType = VariableName | TypeName | TypeVarName
   deriving (Show, Eq)
 
-newtype Identifier (t :: IdentifierType) = Identifier { getIdentName :: String }
+newtype Identifier (t :: IdentifierType) = Identifier {getIdentName :: String}
   deriving (Show, Eq, Ord)
 
 data Expr
@@ -21,7 +21,6 @@ data Expr
   | ELambda (Identifier 'VariableName) Expr
   | EApply Expr Expr
   | EVariable (Identifier 'VariableName)
-  | EUnit
   deriving (Show, Eq)
 
 data Type
@@ -29,6 +28,7 @@ data Type
   | TInt
   | TString
   | TBool
+  | TUnit
   | TLambda Type Type
   deriving (Show, Eq)
 
@@ -41,4 +41,3 @@ class TypeOperations a where
   apply :: Subst -> a -> a
 
 newtype TypeEnv = TypeEnv (Map.Map (Identifier 'VariableName) Scheme)
-

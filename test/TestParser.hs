@@ -28,6 +28,8 @@ test = do
       p "823232" `shouldBe` Right (ELiteral $ LInt 823232)
       p "\"hello world\"" `shouldBe` Right (ELiteral $ LString "hello world")
       p "\"\"" `shouldBe` Right (ELiteral $ LString "")
+      p " True " `shouldBe` Right (ELiteral $ LBool True)
+      p " False " `shouldBe` Right (ELiteral $ LBool False)
 
   describe "parse identifiers" $ do
     it "vars" $ do
@@ -35,7 +37,7 @@ test = do
       p "h123" `shouldBe` Right (EVariable $ Identifier "h123")
       p "x" `shouldBe` Right (EVariable $ Identifier "x")
       p "x " `shouldBe` Right (EVariable $ Identifier "x")
-    -- isLeft (p "12kashdl") `shouldBe` True
+      -- isLeft (p "12kashdl") `shouldBe` True
 
       p "(hello)" `shouldBe` Right (EVariable $ Identifier "hello")
       p "(x)" `shouldBe` Right (EVariable $ Identifier "x")
