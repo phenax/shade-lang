@@ -48,7 +48,6 @@ test = do
       isLeft (p "if") `shouldBe` True
       isLeft (p "then") `shouldBe` True
       isLeft (p "else") `shouldBe` True
-      isLeft (p "else") `shouldBe` True
 
   describe "parse lambda" $ do
     it "lambda" $ do

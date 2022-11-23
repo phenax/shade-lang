@@ -27,6 +27,8 @@ unify (TLambda l r) (TLambda l' r') = do
   return (s1 `composeSubst` s2)
 unify (TVariable u) t = varBind u t
 unify t (TVariable u) = varBind u t
+unify TUnit TUnit = return Map.empty
+unify TString TString = return Map.empty
 unify TInt TInt = return Map.empty
 unify TBool TBool = return Map.empty
 unify t1 t2 =
@@ -66,15 +68,23 @@ ti env (ELambda n e) =
         env'' = TypeEnv (env' `Map.union` Map.singleton n (Scheme [] tv))
     (s1, t1) <- ti env'' e
     return (s1, TLambda (apply s1 tv) t1)
-ti env exp@(EApply fn arg) =
+ti env expr@(EApply fn arg) =
   do
     tv <- newTyVar "a"
     (s1, tfn) <- ti env fn
     (s2, targ) <- ti (apply s1 env) arg
     s3 <- unify (apply s2 tfn) (TLambda targ tv)
     return (s3 `composeSubst` s2 `composeSubst` s1, apply s3 tv)
-    `catchError` \e -> throwError $ e ++ "\n in " ++ show exp
-ti env exp = undefined
+    `catchError` \e -> throwError $ e ++ "\n in " ++ show expr
+ti env (EIfElse cond thenE elseE) = do
+  (sCond, tCond) <- ti env cond
+  unify TBool (apply sCond tCond)
+
+  (sThen, tThen) <- ti env thenE
+  (_sElse, tElse) <- ti env elseE
+
+  subst <- unify tThen (apply sThen tElse)
+  pure (Map.empty, apply subst tThen)
 
 typeInference :: TypeEnv -> Expr -> TIMonad Type
 typeInference (TypeEnv env) e =
