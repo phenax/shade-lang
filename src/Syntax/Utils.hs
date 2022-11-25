@@ -49,14 +49,17 @@ argListP argP spaceConsumer = argListParser []
         Nothing -> pure ls
         Just p -> argListParser $ ls ++ [p]
 
-parseLowerIdent :: Parser (Identifier a)
-parseLowerIdent = lexeme $ do
-  first <- MP.letterChar
+parseIdent :: Parser Char -> Parser (Identifier a)
+parseIdent firstChar = lexeme $ do
+  first <- firstChar
   rest <- MP.many MP.alphaNumChar
   let varName = first : rest
   if varName `elem` reservedKeywords
     then MP.parseError . MP.FancyError 69 . Set.singleton $ MP.ErrorFail "FAAIIILL"
     else pure $ Identifier varName
 
+parseLowerIdent :: Parser (Identifier a)
+parseLowerIdent = parseIdent MP.lowerChar
+
 parseUpperIdent :: Parser (Identifier a)
-parseUpperIdent = parseLowerIdent
+parseUpperIdent = parseIdent MP.upperChar

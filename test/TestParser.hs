@@ -21,6 +21,9 @@ apply = EApply
 var :: String -> Expr
 var = EVariable . Identifier
 
+tvar :: String -> Type
+tvar = TVariable . Identifier
+
 test :: SpecWith ()
 test = do
   let p = first MP.errorBundlePretty . MP.runParser (Parser.parse <* MP.eof) "mafile"
@@ -190,15 +193,9 @@ foobar a b =
         -> PP
         |]
         `shouldBe` Right (TInt `TLambda` (TString `TLambda` TCustom (Identifier "PP")))
+      pt [r| a -> b -> foobar |] `shouldBe` Right (tvar "a" `TLambda` (tvar "b" `TLambda` tvar "foobar"))
+    it "type var" $ do
+      pt [r| a |] `shouldBe` Right (tvar "a")
+      pt [r| bad |] `shouldBe` Right (tvar "bad")
 
-----
-----
-----
-----
-----
-----
-----
-----
-----
-----
 ----
