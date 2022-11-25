@@ -1,69 +1,89 @@
-cabal-version:      3.0
-name:               haskmelater
-version:            0.1.0.0
-synopsis:           ____
--- description:
-license:            MIT
-license-file:       LICENSE
-author:             Akshay Nair
-maintainer:         phenax5@gmail.com
--- copyright:
-category:           Language
-build-type:         Simple
-extra-doc-files:    CHANGELOG.md
--- extra-source-files:
+cabal-version: 3.0
 
-common warnings
-    ghc-options: -Wall -fno-warn-orphans -fno-warn-unused-do-bind
-    build-depends:
-        base ^>=4.15.1.0,
-        containers,
-        mtl
-    default-extensions:
-        DataKinds,
-        KindSignatures,
-        LambdaCase,
-        QuasiQuotes,
-        TypeSynonymInstances,
-        FlexibleInstances
+-- This file has been generated from package.yaml by hpack version 0.34.7.
+--
+-- see: https://github.com/sol/hpack
+
+name:           haskmelater
+version:        0.1.0.0
+synopsis:       Lang stuff
+description:    Lang stuff with more details
+category:       Language
+homepage:       https://github.com/phenax/haskmelater#readme
+bug-reports:    https://github.com/phenax/haskmelater/issues
+author:         Akshay Nair <phenax5@gmail.com>
+maintainer:     Akshay Nair <phenax5@gmail.com>
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/phenax/haskmelater
 
 library
-    import:           warnings
-    exposed-modules:
-        Syntax.Parser,
-        Syntax.Utils,
-        TypeChecker.Infer,
-        TypeChecker.TIMonad,
-        Types
-    -- other-modules:
-    -- other-extensions:
-    build-depends:   
-        megaparsec,
-        parser-combinators
-    hs-source-dirs:   src
-    default-language: Haskell2010
+  exposed-modules:
+      Syntax.Parser
+      Syntax.TypeDef
+      Syntax.Utils
+      TypeChecker.Infer
+      TypeChecker.TIMonad
+      Types
+  other-modules:
+      Paths_haskmelater
+  autogen-modules:
+      Paths_haskmelater
+  hs-source-dirs:
+      src
+  default-extensions:
+      DataKinds, KindSignatures, LambdaCase, QuasiQuotes, TypeSynonymInstances, FlexibleInstances
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-unused-do-bind
+  build-depends:
+      base >=4.15.1.0 && <4.16
+    , containers
+    , megaparsec
+    , mtl
+    , parser-combinators
+  default-language: Haskell2010
 
 executable haskmelater
-    import:           warnings
-    main-is:          Main.hs
-    -- other-modules:
-    -- other-extensions:
-    build-depends:
-        haskmelater
-
-    hs-source-dirs:   app
-    default-language: Haskell2010
+  main-is: Main.hs
+  other-modules:
+      Paths_haskmelater
+  autogen-modules:
+      Paths_haskmelater
+  hs-source-dirs:
+      app
+  default-extensions:
+      DataKinds, KindSignatures, LambdaCase, QuasiQuotes, TypeSynonymInstances, FlexibleInstances
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-unused-do-bind
+  build-depends:
+      base >=4.15.1.0 && <4.16
+    , containers
+    , haskmelater
+    , mtl
+  default-language: Haskell2010
 
 test-suite haskmelater-test
-    import:           warnings
-    default-language: Haskell2010
-    -- other-modules:
-    -- other-extensions:
-    type:             exitcode-stdio-1.0
-    hs-source-dirs:   test
-    main-is:          Main.hs
-    build-depends:
-        hspec,
-        megaparsec,
-        raw-strings-qq,
-        haskmelater
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      TestInfer
+      TestParser
+      Paths_haskmelater
+  autogen-modules:
+      Paths_haskmelater
+  hs-source-dirs:
+      test
+  default-extensions:
+      DataKinds, KindSignatures, LambdaCase, QuasiQuotes, TypeSynonymInstances, FlexibleInstances
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-unused-do-bind
+  build-depends:
+      base >=4.15.1.0 && <4.16
+    , containers
+    , haskmelater
+    , hspec
+    , megaparsec
+    , mtl
+    , raw-strings-qq
+  default-language: Haskell2010

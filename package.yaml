@@ -1,0 +1,53 @@
+name:               haskmelater
+version:            0.1.0.0
+synopsis:           Lang stuff
+description:        Lang stuff with more details
+license:            MIT
+license-file:       LICENSE
+author:             Akshay Nair <phenax5@gmail.com>
+maintainer:         Akshay Nair <phenax5@gmail.com>
+category:           Language
+build-type:         Simple
+github:             phenax/haskmelater
+
+ghc-options: -Wall -fno-warn-orphans -fno-warn-unused-do-bind
+
+verbatim:
+  cabal-version: 3.0
+
+dependencies:
+  - base ^>=4.15.1.0
+  - containers
+  - mtl
+
+default-extensions:
+    DataKinds,
+    KindSignatures,
+    LambdaCase,
+    QuasiQuotes,
+    TypeSynonymInstances,
+    FlexibleInstances
+
+library:
+  source-dirs: src
+  dependencies:
+    - megaparsec
+    - parser-combinators
+
+executable:
+  main: Main.hs
+  source-dirs: app
+  dependencies:
+    - haskmelater
+
+tests:
+  haskmelater-test:
+    main: Main.hs
+    source-dirs:
+      - test
+    dependencies:
+      - hspec
+      - megaparsec
+      - raw-strings-qq
+      - haskmelater
+

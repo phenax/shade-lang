@@ -6,6 +6,7 @@ let
     haskellPackages.haskell-language-server
     haskellPackages.cabal-install
     nodePackages.nodemon
+    pkgs.hpack
   ];
 
   commonHsPackages = with haskellPackages; [ ];

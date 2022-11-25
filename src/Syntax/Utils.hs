@@ -24,6 +24,8 @@ reservedKeywords =
   [ "if",
     "then",
     "let",
+    "True",
+    "False",
     "else"
   ]
 

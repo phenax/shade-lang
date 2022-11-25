@@ -1,7 +1,10 @@
 
-run-test:
+hpack:
+	hpack
+
+run-test: hpack
 	cabal v2-test
 
 testw:
-	nodemon -e .hs --exec 'make run-test || true'
+	nodemon -e .hs,.cabal --exec 'make hpack run-test || true'
 
