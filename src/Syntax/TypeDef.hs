@@ -46,18 +46,18 @@ parseTypeLambda = do
 parseTypeVarName :: Parser Type
 parseTypeVarName = TVariable <$> (parse :: Parser (Identifier 'TypeVarName))
 
-parseRawExpr :: Parser Type
-parseRawExpr = parseTypeRecSafe <|> parseTypeLambda
+parseRawType :: Parser Type
+parseRawType = parseTypeRecSafe <|> parseTypeLambda
 
 parseTypeRecSafe :: Parser Type
 parseTypeRecSafe =
-  parens parseRawExpr <|> parseTypeName <|> parseTypeVarName
+  parens parseRawType <|> parseTypeName <|> parseTypeVarName
 
 instance Parsable Type where
   parse =
     scnl >> p <* scnl
     where
-      p = parseTypeLambda <|> parseRawExpr
+      p = parseTypeLambda <|> parseRawType
 
 -- <|> parseTypeVar <|> parseTypeLambda
 --

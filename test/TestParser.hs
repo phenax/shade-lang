@@ -8,7 +8,7 @@ import qualified Syntax.Utils as Parser
 import Test.Hspec
 import qualified Text.Megaparsec as MP
 import Text.RawString.QQ (r)
-import Types (Declr (Definition), Expr (..), Identifier (..), Literal (..), Parser, Type (..))
+import Types (Declr (Declaration, Definition), Expr (..), Identifier (..), Literal (..), Module (..), ModuleHeader (..), Parser, Scheme (..), Type (..))
 
 (~~>) :: String -> Expr -> Expr
 (~~>) = ELambda . Identifier
@@ -152,6 +152,11 @@ test = do
   describe "declaration" $ do
     let pd = first MP.errorBundlePretty . MP.runParser ((Parser.parse :: Parser Declr) <* MP.eof) "mafile"
     it "simple declaration" $ do
+      pd [r|foobar :: String -> Int |]
+        `shouldBe` Right
+          ( Declaration (Identifier "foobar") (Scheme [] $ TString `TLambda` TInt)
+          )
+    it "simple definiton" $ do
       pd [r|foobar = 200 |] `shouldBe` Right (Definition (Identifier "foobar") (ELiteral $ LInt 200))
       pd
         [r|
@@ -178,7 +183,7 @@ foobar a b =
 
   describe "typedef" $ do
     let pt = first MP.errorBundlePretty . MP.runParser ((Parser.parse :: Parser Type) <* MP.eof) "mafile"
-    it "simple declaration" $ do
+    it "simple type defn" $ do
       pt [r| String |] `shouldBe` Right TString
       pt [r| Int |] `shouldBe` Right TInt
       pt [r| Bool |] `shouldBe` Right TBool
@@ -197,5 +202,23 @@ foobar a b =
     it "type var" $ do
       pt [r| a |] `shouldBe` Right (tvar "a")
       pt [r| bad |] `shouldBe` Right (tvar "bad")
+
+  describe "module" $ do
+    let pd = first MP.errorBundlePretty . MP.runParser ((Parser.parse :: Parser Module) <* MP.eof) "mafile"
+    it "simple module" $ do
+      pd
+        [r|
+        module Foobar exposing (..)
+
+        foobar :: a -> Int 
+        foobar x = 200
+        |]
+        `shouldBe` Right
+          ( Module
+              (ModuleHeader $ Identifier "Foobar")
+              [ Declaration (Identifier "foobar") (Scheme [] (tvar "a" `TLambda` TInt)),
+                Definition (Identifier "foobar") ("x" ~~> ELiteral (LInt 200))
+              ]
+          )
 
 ----

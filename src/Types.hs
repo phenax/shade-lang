@@ -10,7 +10,7 @@ type Parser = MP.Parsec Void String
 data Literal = LString String | LInt Int | LBool Bool | LUnit
   deriving (Show, Eq)
 
-data IdentifierType = VariableName | TypeName | TypeVarName | CtorName
+data IdentifierType = VariableName | TypeName | TypeVarName | CtorName | ModuleName
   deriving (Show, Eq)
 
 newtype Identifier (t :: IdentifierType) = Identifier {getIdentName :: String}
@@ -34,7 +34,11 @@ data Declr
   | DataDefinition (Identifier 'TypeName) [Ctor]
   deriving (Show, Eq)
 
-newtype Module = Module [Declr]
+newtype ModuleHeader = ModuleHeader (Identifier 'ModuleName)
+  deriving (Show, Eq)
+
+data Module = Module ModuleHeader [Declr]
+  deriving (Show, Eq)
 
 data Type
   = TVariable (Identifier 'TypeVarName)

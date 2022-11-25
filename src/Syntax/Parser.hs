@@ -3,6 +3,7 @@ module Syntax.Parser where
 import Control.Monad (void)
 import Control.Monad.Combinators ((<|>))
 import qualified Data.Set as Set
+import Syntax.TypeDef
 import Syntax.Utils
 import qualified Text.Megaparsec as MP
 import qualified Text.Megaparsec.Char as MP
@@ -80,7 +81,31 @@ parseDefn = withIndentGuard $ \spaceConsumer -> do
   symbol "="
   body <- spaceConsumer >> parse
   let lambda = foldr ELambda body args
-  pure $ Definition ident lambda
+  return $ Definition ident lambda
+
+parseDeclr :: Parser Declr
+parseDeclr = withIndentGuard $ \spaceConsumer -> do
+  ident <- parse :: Parser (Identifier 'VariableName)
+  symbol "::"
+  typ <- spaceConsumer >> (parse :: Parser Type)
+  return $ Declaration ident (Scheme [] typ)
 
 instance Parsable Declr where
-  parse = scnl >> parseDefn <* scnl
+  parse = scnl >> p <* scnl
+    where
+      p = MP.try parseDeclr <|> parseDefn
+
+instance Parsable (Identifier 'ModuleName) where
+  parse = parseUpperIdent
+
+instance Parsable Module where
+  parse = scnl >> p <* scnl
+    where
+      parseHeader = do
+        modName <- symbol "module" >> (parse :: Parser (Identifier 'ModuleName))
+        _ <- symbol "exposing" >> symbol "(..)"
+        return $ ModuleHeader modName
+
+      p = do
+        header <- parseHeader <* scnl
+        Module header <$> MP.many parse
