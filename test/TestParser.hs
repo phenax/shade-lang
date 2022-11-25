@@ -3,10 +3,11 @@ module TestParser where
 import Data.Bifunctor (first)
 import Data.Either (fromLeft, isLeft)
 import qualified Syntax.Parser as Parser
+import qualified Syntax.Utils as Parser
 import Test.Hspec
 import qualified Text.Megaparsec as MP
 import Text.RawString.QQ (r)
-import Types (Expr (..), Identifier (..), Literal (..))
+import Types (Declr (Definition), Expr (..), Identifier (..), Literal (..), Parser)
 
 (~~>) :: String -> Expr -> Expr
 (~~>) = ELambda . Identifier
@@ -21,7 +22,7 @@ var = EVariable . Identifier
 
 test :: SpecWith ()
 test = do
-  let p = first MP.errorBundlePretty . MP.runParser (Parser.parseExpression <* MP.eof) "mafile"
+  let p = first MP.errorBundlePretty . MP.runParser (Parser.parse <* MP.eof) "mafile"
 
   describe "parse literals" $ do
     it "literals" $ do
@@ -49,25 +50,16 @@ test = do
       isLeft (p "then") `shouldBe` True
       isLeft (p "else") `shouldBe` True
 
-  describe "parse lambda" $ do
-    it "lambda" $ do
-      p "\\x -> 5" `shouldBe` Right ("x" ~~> ELiteral (LInt 5))
-      p "\\x y -> 5" `shouldBe` Right ("x" ~~> "y" ~~> ELiteral (LInt 5))
-    it "with parens" $ do
-      p "\\x -> (5)" `shouldBe` Right ("x" ~~> ELiteral (LInt 5))
-      p "(\\x y -> 5)" `shouldBe` Right ("x" ~~> ELambda (Identifier "y") (ELiteral $ LInt 5))
+  describe "parse lambda" $
+    do
+      it "lambda" $ do
+        p "\\x -> 5" `shouldBe` Right ("x" ~~> ELiteral (LInt 5))
+        p "\\x y -> 5" `shouldBe` Right ("x" ~~> "y" ~~> ELiteral (LInt 5))
+      it "with parens" $ do
+        p "\\x -> (5)" `shouldBe` Right ("x" ~~> ELiteral (LInt 5))
+        p "(\\x y -> 5)" `shouldBe` Right ("x" ~~> ELambda (Identifier "y") (ELiteral $ LInt 5))
 
   describe "ifelse" $ do
-    runIO $
-      putStrLn $
-        fromLeft "------" $
-          p
-            [r|
-        if True then
-          "yes"
-        else
-          "no"
-        |]
     it "ifelse" $ do
       p
         [r| if True then "yes" else "no" |]
@@ -79,11 +71,11 @@ test = do
           )
       p
         [r|
-          if True then
-            "yes"
-          else
-            "no"
-        |]
+        if True then
+          "yes"
+        else
+          "no"
+      |]
         `shouldBe` Right
           ( EIfElse
               (ELiteral $ LBool True)
@@ -92,7 +84,7 @@ test = do
           )
       p
         [r|
-          if
+        if
   True
           then
             "yes"
@@ -105,14 +97,15 @@ test = do
               (ELiteral $ LString "yes")
               (ELiteral $ LString "no")
           )
+
     it "sad :(" $ do
       isLeft
         ( p
             [r|
-          if True then
-          "yes"
-          else "no"
-        |]
+            if True then
+            "yes"
+            else "no"
+          |]
         )
         `shouldBe` True
       isLeft (p [r| if True |]) `shouldBe` True
@@ -120,7 +113,6 @@ test = do
       isLeft (p [r| if True then True |]) `shouldBe` True
 
   describe "parse apply" $ do
-    -- runIO $ putStrLn $ fromLeft "" $ p "hello 1 2"
     it "apply" $ do
       p "hello 1 2"
         `shouldBe` Right
@@ -140,18 +132,45 @@ test = do
               `apply` ("x" ~~> var "x")
               `apply` ELiteral (LInt 2)
           )
-    it "with indents" $ do
-      p
-        [r|
+  it "with indents" $ do
+    p
+      [r|
   hello
     1
     2
           |]
+      `shouldBe` Right
+        ( EVariable (Identifier "hello")
+            `apply` ELiteral (LInt 1)
+            `apply` ELiteral (LInt 2)
+        )
+
+  describe "declaration" $ do
+    let pd = first MP.errorBundlePretty . MP.runParser ((Parser.parse :: Parser Declr) <* MP.eof) "mafile"
+    it "simple declaration" $ do
+      pd [r|foobar = 200 |] `shouldBe` Right (Definition (Identifier "foobar") (ELiteral $ LInt 200))
+      pd
+        [r|
+foobar =
+  hello
+    world
+  |]
+        `shouldBe` Right (Definition (Identifier "foobar") (var "hello" `apply` var "world"))
+      pd [r|foobar a b = 200 |]
         `shouldBe` Right
-          ( EVariable (Identifier "hello")
-              `apply` ELiteral (LInt 1)
-              `apply` ELiteral (LInt 2)
+          ( Definition
+              (Identifier "foobar")
+              ("a" ~~> "b" ~~> ELiteral (LInt 200))
           )
+    it "sad case :(" $ do
+      isLeft
+        ( pd
+            [r|
+foobar a b =
+200
+      |]
+        )
+        `shouldBe` True
 
 ----
 ----
