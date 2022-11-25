@@ -37,7 +37,8 @@ data Declr
 newtype Module = Module [Declr]
 
 data Type
-  = TVariable String
+  = TVariable (Identifier 'TypeVarName)
+  | TCustom (Identifier 'TypeName)
   | TInt
   | TString
   | TBool
@@ -48,10 +49,10 @@ data Type
 data Scheme = Scheme [Identifier 'TypeVarName] Type
   deriving (Show, Eq)
 
-type Subst = Map.Map String Type
+type Subst = Map.Map (Identifier 'TypeVarName) Type
 
 class TypeOperations a where
-  ftv :: a -> Set.Set String
+  ftv :: a -> Set.Set (Identifier 'TypeVarName)
   apply :: Subst -> a -> a
 
 newtype TypeEnv = TypeEnv (Map.Map (Identifier 'VariableName) Scheme)

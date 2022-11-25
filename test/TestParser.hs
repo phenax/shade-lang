@@ -3,11 +3,12 @@ module TestParser where
 import Data.Bifunctor (first)
 import Data.Either (fromLeft, isLeft)
 import qualified Syntax.Parser as Parser
+import qualified Syntax.TypeDef as Parser
 import qualified Syntax.Utils as Parser
 import Test.Hspec
 import qualified Text.Megaparsec as MP
 import Text.RawString.QQ (r)
-import Types (Declr (Definition), Expr (..), Identifier (..), Literal (..), Parser)
+import Types (Declr (Definition), Expr (..), Identifier (..), Literal (..), Parser, Type (..))
 
 (~~>) :: String -> Expr -> Expr
 (~~>) = ELambda . Identifier
@@ -171,6 +172,24 @@ foobar a b =
       |]
         )
         `shouldBe` True
+
+  describe "typedef" $ do
+    let pt = first MP.errorBundlePretty . MP.runParser ((Parser.parse :: Parser Type) <* MP.eof) "mafile"
+    it "simple declaration" $ do
+      pt [r| String |] `shouldBe` Right TString
+      pt [r| Int |] `shouldBe` Right TInt
+      pt [r| Bool |] `shouldBe` Right TBool
+      pt [r| Custommm |] `shouldBe` Right (TCustom $ Identifier "Custommm")
+    it "type lambda" $ do
+      pt [r| Int -> String -> Bool |] `shouldBe` Right (TInt `TLambda` (TString `TLambda` TBool))
+      pt [r| Int -> String |] `shouldBe` Right (TInt `TLambda` TString)
+      pt
+        [r|
+          Int
+        -> String
+        -> PP
+        |]
+        `shouldBe` Right (TInt `TLambda` (TString `TLambda` TCustom (Identifier "PP")))
 
 ----
 ----

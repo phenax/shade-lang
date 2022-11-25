@@ -25,8 +25,8 @@ instance TypeOperations Type where
   apply _s t = t
 
 instance TypeOperations Scheme where
-  ftv (Scheme vars t) = ftv t `Set.difference` Set.fromList (map getIdentName vars)
-  apply s (Scheme vars t) = Scheme vars (apply (foldr (Map.delete . getIdentName) s vars) t)
+  ftv (Scheme vars t) = ftv t `Set.difference` Set.fromList vars
+  apply s (Scheme vars t) = Scheme vars (apply (foldr Map.delete s vars) t)
 
 instance TypeOperations a => TypeOperations [a] where
   apply s = map (apply s)
@@ -40,7 +40,7 @@ composeSubst :: Subst -> Subst -> Subst
 composeSubst s1 s2 = Map.map (apply s1) s2 `Map.union` s1
 
 generalize :: TypeEnv -> Type -> Scheme
-generalize env t = Scheme (map Identifier vars) t
+generalize env t = Scheme vars t
   where
     vars = Set.toList (ftv t `Set.difference` ftv env)
 

@@ -12,12 +12,12 @@ newTyVar :: String -> TIMonad Type
 newTyVar prefix = do
   s <- get
   put s {tiSupply = tiSupply s + 1}
-  return (TVariable (prefix ++ show (tiSupply s)))
+  return (TVariable (Identifier $ prefix ++ show (tiSupply s)))
 
 instantiate :: Scheme -> TIMonad Type
 instantiate (Scheme vars t) = do
   nvars <- mapM (\_ -> newTyVar "a") vars
-  let s = Map.mapKeys getIdentName $ Map.fromList (zip vars nvars)
+  let s = Map.fromList (zip vars nvars)
   return $ apply s t
 
 unify :: Type -> Type -> TIMonad Subst
@@ -38,13 +38,13 @@ unify t1 t2 =
       ++ " vs. "
       ++ show t2
 
-varBind :: String -> Type -> TIMonad Subst
+varBind :: Identifier 'TypeVarName -> Type -> TIMonad Subst
 varBind u t
   | t == TVariable u = return Map.empty
   | u `Set.member` ftv t =
       throwError $
         "occurs check fails: "
-          ++ u
+          ++ getIdentName u
           ++ " vs. "
           ++ show t
   | otherwise = return $ Map.singleton u t

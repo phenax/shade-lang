@@ -14,6 +14,9 @@ import Types
 
 infixr 9 ~~>
 
+tvar :: String -> Type
+tvar = TVariable . Identifier
+
 test :: SpecWith ()
 test = do
   let infer env e = fst <$> runTI (typeInference env e)
@@ -27,7 +30,7 @@ test = do
     it "lambda" $ do
       let e = "foo" ~~> EVariable (Identifier "foo")
       let env = TypeEnv Map.empty
-      infer env e `shouldReturn` Right (TVariable "a0" `TLambda` TVariable "a0")
+      infer env e `shouldReturn` Right (tvar "a0" `TLambda` tvar "a0")
 
   describe "apply" $ do
     it "functon application" $ do
@@ -60,7 +63,7 @@ test = do
             TypeEnv $
               Map.fromList
                 [ (Identifier "cond", Scheme [] $ TInt `TLambda` TBool),
-                  (Identifier "thenE", Scheme [] $ TVariable "b" `TLambda` TInt),
+                  (Identifier "thenE", Scheme [] $ tvar "b" `TLambda` TInt),
                   (Identifier "elseE", Scheme [] $ TString `TLambda` TInt)
                 ]
       infer env e `shouldReturn` Right (TLambda TString TInt)

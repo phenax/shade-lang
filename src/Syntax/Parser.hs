@@ -26,13 +26,7 @@ instance Parsable Literal where
       p = (LString <$> parse) <|> (LInt <$> parse) <|> (LBool <$> parse)
 
 instance Parsable (Identifier 'VariableName) where
-  parse = lexeme $ do
-    first <- MP.letterChar
-    rest <- MP.many MP.alphaNumChar
-    let varName = first : rest
-    if varName `elem` reservedKeywords
-      then MP.parseError . MP.FancyError 69 . Set.singleton $ MP.ErrorFail "FAAIIILL"
-      else pure $ Identifier varName
+  parse = parseLowerIdent
 
 parseLambda :: Parser Expr
 parseLambda = lexeme $ do

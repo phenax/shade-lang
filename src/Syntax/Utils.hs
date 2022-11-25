@@ -1,6 +1,7 @@
 module Syntax.Utils where
 
 import Control.Monad (void)
+import Data.Set as Set
 import qualified Text.Megaparsec as MP
 import qualified Text.Megaparsec.Char as MP
 import qualified Text.Megaparsec.Char.Lexer as MPL
@@ -47,3 +48,15 @@ argListP argP spaceConsumer = argListParser []
       case optn of
         Nothing -> pure ls
         Just p -> argListParser $ ls ++ [p]
+
+parseLowerIdent :: Parser (Identifier a)
+parseLowerIdent = lexeme $ do
+  first <- MP.letterChar
+  rest <- MP.many MP.alphaNumChar
+  let varName = first : rest
+  if varName `elem` reservedKeywords
+    then MP.parseError . MP.FancyError 69 . Set.singleton $ MP.ErrorFail "FAAIIILL"
+    else pure $ Identifier varName
+
+parseUpperIdent :: Parser (Identifier a)
+parseUpperIdent = parseLowerIdent
