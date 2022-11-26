@@ -27,6 +27,7 @@ library
       Syntax.TypeDef
       Syntax.Utils
       TypeChecker.Infer
+      TypeChecker.ModuleCheck
       TypeChecker.TIMonad
       Types
   other-modules:
@@ -69,6 +70,7 @@ test-suite haskmelater-test
   main-is: Main.hs
   other-modules:
       TestInfer
+      TestModuleTypeCheck
       TestParser
       Paths_haskmelater
   autogen-modules:

@@ -60,3 +60,4 @@ class TypeOperations a where
   apply :: Subst -> a -> a
 
 newtype TypeEnv = TypeEnv (Map.Map (Identifier 'VariableName) Scheme)
+  deriving (Show, Eq)
