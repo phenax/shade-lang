@@ -1,7 +1,6 @@
 module TypeChecker.TIMonad where
 
 import Control.Monad.Except
-import Control.Monad.Reader
 import Control.Monad.State
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -9,7 +8,7 @@ import Types
 
 newtype TIState = TIState {tiSupply :: Int}
 
-type TIMonad a = ExceptT String (ReaderT TIEnv (StateT TIState IO)) a
+type TIMonad a = ExceptT String (StateT TIState IO) a
 
 instance TypeOperations Type where
   ftv (TVariable n) = Set.singleton n
@@ -44,16 +43,10 @@ generalize env t = Scheme vars t
   where
     vars = Set.toList (ftv t `Set.difference` ftv env)
 
-data TIEnv = TIEnv {}
-
 remove :: TypeEnv -> Identifier 'VariableName -> TypeEnv
 remove (TypeEnv env) var = TypeEnv (Map.delete var env)
 
 runTI :: TIMonad a -> IO (Either String a, TIState)
-runTI t =
-  do
-    (res, st) <- runStateT (runReaderT (runExceptT t) initTIEnv) initTIState
-    return (res, st)
+runTI t = runStateT (runExceptT t) initTIState
   where
-    initTIEnv = TIEnv
     initTIState = TIState {tiSupply = 0}
