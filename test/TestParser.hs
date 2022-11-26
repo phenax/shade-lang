@@ -60,6 +60,20 @@ test = do
       it "lambda" $ do
         p "\\x -> 5" `shouldBe` Right ("x" ~~> ELiteral (LInt 5))
         p "\\x y -> 5" `shouldBe` Right ("x" ~~> "y" ~~> ELiteral (LInt 5))
+        p
+          [r|
+          \x y ->
+            5
+          |]
+          `shouldBe` Right ("x" ~~> "y" ~~> ELiteral (LInt 5))
+        isLeft
+          ( p
+              [r|
+          \x y ->
+          5
+          |]
+          )
+          `shouldBe` True
       it "with parens" $ do
         p "\\x -> (5)" `shouldBe` Right ("x" ~~> ELiteral (LInt 5))
         p "(\\x y -> 5)" `shouldBe` Right ("x" ~~> ELambda (Identifier "y") (ELiteral $ LInt 5))

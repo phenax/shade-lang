@@ -33,7 +33,7 @@ parseLambda :: Parser () -> Parser Expr
 parseLambda sc = lexeme $ do
   _ <- symbol "\\"
   idents <- MP.someTill (parse sc) (symbol "->")
-  body <- parse sc
+  body <- sc >> parse sc
   pure $ foldr ELambda body idents
 
 withIndentGuard :: (Parser () -> Parser a) -> Parser a
