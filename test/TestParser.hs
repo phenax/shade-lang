@@ -4,6 +4,7 @@ import Data.Bifunctor (first)
 import Data.Either (fromLeft, isLeft)
 import qualified Syntax.Parser as Parser
 import qualified Syntax.TypeDef as Parser
+import Syntax.Utils (scnl)
 import qualified Syntax.Utils as Parser
 import Test.Hspec
 import qualified Text.Megaparsec as MP
@@ -26,7 +27,7 @@ tvar = TVariable . Identifier
 
 test :: SpecWith ()
 test = do
-  let p = first MP.errorBundlePretty . MP.runParser (Parser.parse <* MP.eof) "mafile"
+  let p = first MP.errorBundlePretty . MP.runParser (Parser.parseExpression <* MP.eof) "mafile"
 
   describe "parse literals" $ do
     it "literals" $ do
@@ -148,9 +149,22 @@ test = do
             `apply` ELiteral (LInt 1)
             `apply` ELiteral (LInt 2)
         )
+    p
+      [r|
+        hello 1 (add 2
+          5)
+      |]
+      `shouldBe` Right
+        ( EVariable (Identifier "hello")
+            `apply` ELiteral (LInt 1)
+            `apply` ( EVariable (Identifier "add")
+                        `apply` ELiteral (LInt 2)
+                        `apply` ELiteral (LInt 5)
+                    )
+        )
 
   describe "declaration" $ do
-    let pd = first MP.errorBundlePretty . MP.runParser ((Parser.parse :: Parser Declr) <* MP.eof) "mafile"
+    let pd = first MP.errorBundlePretty . MP.runParser ((Parser.parse scnl :: Parser Declr) <* MP.eof) "mafile"
     it "simple declaration" $ do
       pd [r|foobar :: String -> Int |]
         `shouldBe` Right
@@ -182,7 +196,7 @@ foobar a b =
         `shouldBe` True
 
   describe "typedef" $ do
-    let pt = first MP.errorBundlePretty . MP.runParser ((Parser.parse :: Parser Type) <* MP.eof) "mafile"
+    let pt = first MP.errorBundlePretty . MP.runParser ((Parser.parse scnl :: Parser Type) <* MP.eof) "mafile"
     it "simple type defn" $ do
       pt [r| String |] `shouldBe` Right TString
       pt [r| Int |] `shouldBe` Right TInt
@@ -204,7 +218,7 @@ foobar a b =
       pt [r| bad |] `shouldBe` Right (tvar "bad")
 
   describe "module" $ do
-    let pd = first MP.errorBundlePretty . MP.runParser ((Parser.parse :: Parser Module) <* MP.eof) "mafile"
+    let pd = first MP.errorBundlePretty . MP.runParser ((Parser.parse scnl :: Parser Module) <* MP.eof) "mafile"
     it "simple module" $ do
       pd
         [r|

@@ -11,29 +11,29 @@ import qualified Text.Megaparsec.Char.Lexer as MPL
 import Types
 
 instance Parsable Int where
-  parse = read <$> MP.some MP.digitChar
+  parse _ = read <$> MP.some MP.digitChar
 
 instance Parsable String where
-  parse = do
+  parse _ = do
     _ <- MP.char '"'
     MP.manyTill MP.latin1Char (MP.char '"')
 
 instance Parsable Bool where
-  parse = (True <$ symbol "True") <|> (False <$ symbol "False")
+  parse _ = (True <$ symbol "True") <|> (False <$ symbol "False")
 
 instance Parsable Literal where
-  parse = lexeme p
+  parse sc = lexeme p
     where
-      p = (LString <$> parse) <|> (LInt <$> parse) <|> (LBool <$> parse)
+      p = (LString <$> parse sc) <|> (LInt <$> parse sc) <|> (LBool <$> parse sc)
 
 instance Parsable (Identifier 'VariableName) where
-  parse = parseLowerIdent
+  parse _ = parseLowerIdent
 
-parseLambda :: Parser Expr
-parseLambda = lexeme $ do
+parseLambda :: Parser () -> Parser Expr
+parseLambda sc = lexeme $ do
   _ <- symbol "\\"
-  idents <- MP.someTill parse (symbol "->")
-  body <- parse
+  idents <- MP.someTill (parse sc) (symbol "->")
+  body <- parse sc
   pure $ foldr ELambda body idents
 
 withIndentGuard :: (Parser () -> Parser a) -> Parser a
@@ -43,69 +43,73 @@ withIndentGuard fn = do
   let sc' = void $ MPL.indentGuard sc GT level
   fn sc'
 
-parseApply :: Parser Expr
-parseApply = withIndentGuard $ \spaceConsumer -> do
-  fn <- parseExprWithoutApply
-  args <- argListP parseExprWithoutApply spaceConsumer
+parseApply :: Parser () -> Parser Expr
+parseApply sc = do
+  fn <- parseExprWithoutApply sc
+  args <- argListP (parseExprWithoutApply sc) sc
   pure $ foldl EApply fn args
 
-parseIfElse :: Parser Expr
-parseIfElse = withIndentGuard $ \spaceConsumer -> do
+parseIfElse :: Parser () -> Parser Expr
+parseIfElse sc = do
   symbol "if"
-  cond <- scnl >> parse
+  cond <- scnl >> parse sc
   symbol "then"
-  thenE <- spaceConsumer >> parse
+  thenE <- sc >> parse sc
   symbol "else"
-  elseE <- spaceConsumer >> parse
+  elseE <- sc >> parse sc
   pure $ EIfElse cond thenE elseE
 
-parseRawExpr :: Parser Expr
-parseRawExpr = parens (parseApply <|> p) <|> p
+parseRawExpr :: Parser () -> Parser Expr
+parseRawExpr sc = parens (parseApply sc <|> p) <|> p
   where
     p =
-      parseLambda
-        <|> parseIfElse
-        <|> (ELiteral <$> parse)
-        <|> (EVariable <$> (parse :: Parser (Identifier 'VariableName)))
+      parseLambda sc
+        <|> parseIfElse sc
+        <|> (ELiteral <$> parse sc)
+        <|> (EVariable <$> (parse sc :: Parser (Identifier 'VariableName)))
 
-parseExprWithoutApply :: Parser Expr
+parseExprWithoutApply :: Parser () -> Parser Expr
 parseExprWithoutApply = parseRawExpr
 
 instance Parsable Expr where
-  parse = (parseApply <|> parseExprWithoutApply) <* scnl
+  parse sc = (parseApply sc <|> parseExprWithoutApply sc) <* scnl
 
-parseDefn :: Parser Declr
-parseDefn = withIndentGuard $ \spaceConsumer -> do
-  ident <- parse :: Parser (Identifier 'VariableName)
-  args <- MP.many (parse :: Parser (Identifier 'VariableName))
+parseExpression :: Parser Expr
+parseExpression = withIndentGuard parse
+
+parseDefn :: Parser () -> Parser Declr
+parseDefn sc = do
+  ident <- parse sc :: Parser (Identifier 'VariableName)
+  args <- MP.many (parse sc :: Parser (Identifier 'VariableName))
   symbol "="
-  body <- spaceConsumer >> parse
+  body <- sc >> parse sc
   let lambda = foldr ELambda body args
   return $ Definition ident lambda
 
-parseDeclr :: Parser Declr
-parseDeclr = withIndentGuard $ \spaceConsumer -> do
-  ident <- parse :: Parser (Identifier 'VariableName)
+parseDeclr :: Parser () -> Parser Declr
+parseDeclr sc = do
+  ident <- parse sc :: Parser (Identifier 'VariableName)
   symbol "::"
-  typ <- spaceConsumer >> (parse :: Parser Type)
+  typ <- sc >> (parse sc :: Parser Type)
   return $ Declaration ident (Scheme [] typ)
 
 instance Parsable Declr where
-  parse = scnl >> p <* scnl
+  parse _ = scnl >> p <* scnl
     where
-      p = MP.try parseDeclr <|> parseDefn
+      p = withIndentGuard $
+        \spaceConsumer -> MP.try (parseDeclr spaceConsumer) <|> parseDefn spaceConsumer
 
 instance Parsable (Identifier 'ModuleName) where
-  parse = parseUpperIdent
+  parse _ = parseUpperIdent
 
 instance Parsable Module where
-  parse = scnl >> p <* scnl
+  parse sc = scnl >> p <* scnl
     where
       parseHeader = do
-        modName <- symbol "module" >> (parse :: Parser (Identifier 'ModuleName))
+        modName <- symbol "module" >> (parse sc :: Parser (Identifier 'ModuleName))
         _ <- symbol "exposing" >> symbol "(..)"
         return $ ModuleHeader modName
 
       p = do
         header <- parseHeader <* scnl
-        Module header <$> MP.many parse
+        Module header <$> MP.many (parse sc)

@@ -8,7 +8,7 @@ import qualified Text.Megaparsec.Char.Lexer as MPL
 import Types
 
 class Parsable a where
-  parse :: Parser a
+  parse :: Parser () -> Parser a
 
 scnl :: Parser ()
 sc :: Parser ()
