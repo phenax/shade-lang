@@ -59,12 +59,21 @@ parseIfElse sc = do
   elseE <- sc >> parse sc
   pure $ EIfElse cond thenE elseE
 
+parseLetIn :: Parser () -> Parser Expr
+parseLetIn sc = do
+  symbol "let"
+  bindings <- MP.many (sc >> parse sc) <* scnl
+  symbol "in"
+  expr <- parse sc
+  pure $ ELetIn bindings expr
+
 parseRawExpr :: Parser () -> Parser Expr
 parseRawExpr sc = parens (parseApply sc <|> p) <|> p
   where
     p =
       parseLambda sc
         <|> parseIfElse sc
+        <|> parseLetIn sc
         <|> (ELiteral <$> parse sc)
         <|> (EVariable <$> (parse sc :: Parser (Identifier 'VariableName)))
 
@@ -77,27 +86,31 @@ instance Parsable Expr where
 parseExpression :: Parser Expr
 parseExpression = withIndentGuard parse
 
-parseDefn :: Parser () -> Parser Declr
+instance Parsable Binding where
+  parse _ = withIndentGuard $
+    \spaceConsumer ->
+      MP.try (parseDeclr spaceConsumer) <|> MP.try (parseDefn spaceConsumer)
+
+parseDefn :: Parser () -> Parser Binding
 parseDefn sc = do
   ident <- parse sc :: Parser (Identifier 'VariableName)
   args <- MP.many (parse sc :: Parser (Identifier 'VariableName))
   symbol "="
   body <- sc >> parse sc
   let lambda = foldr ELambda body args
-  return $ Definition ident lambda
+  return $ BindDefinition ident lambda
 
-parseDeclr :: Parser () -> Parser Declr
+parseDeclr :: Parser () -> Parser Binding
 parseDeclr sc = do
   ident <- parse sc :: Parser (Identifier 'VariableName)
   symbol "::"
   typ <- sc >> (parse sc :: Parser Type)
-  return $ Declaration ident (Scheme [] typ)
+  return $ BindDeclaration ident (Scheme [] typ)
 
 instance Parsable Declr where
-  parse _ = scnl >> p <* scnl
+  parse sc = scnl >> p <* scnl
     where
-      p = withIndentGuard $
-        \spaceConsumer -> MP.try (parseDeclr spaceConsumer) <|> parseDefn spaceConsumer
+      p = Binding <$> parse sc
 
 instance Parsable (Identifier 'ModuleName) where
   parse _ = parseUpperIdent

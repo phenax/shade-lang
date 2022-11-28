@@ -16,12 +16,12 @@ import Types
 infixr 9 ~~>
 
 (<::>) :: String -> Type -> Declr
-(<::>) name ty = Declaration (Identifier name) (Scheme [] ty)
+(<::>) name ty = Binding $ BindDeclaration (Identifier name) (Scheme [] ty)
 
 infixr 1 <::>
 
 (<=>) :: String -> Expr -> Declr
-(<=>) = Definition . Identifier
+(<=>) name = Binding . BindDefinition (Identifier name)
 
 infixr 1 <=>
 

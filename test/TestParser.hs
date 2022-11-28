@@ -9,7 +9,7 @@ import qualified Syntax.Utils as Parser
 import Test.Hspec
 import qualified Text.Megaparsec as MP
 import Text.RawString.QQ (r)
-import Types (Declr (Declaration, Definition), Expr (..), Identifier (..), Literal (..), Module (..), ModuleHeader (..), Parser, Scheme (..), Type (..))
+import Types (Binding (..), Declr (..), Expr (..), Identifier (..), Literal (..), Module (..), ModuleHeader (..), Parser, Scheme (..), Type (..))
 
 (~~>) :: String -> Expr -> Expr
 (~~>) = ELambda . Identifier
@@ -24,6 +24,16 @@ var = EVariable . Identifier
 
 tvar :: String -> Type
 tvar = TVariable . Identifier
+
+(<::>) :: String -> Type -> Binding
+(<::>) name ty = BindDeclaration (Identifier name) (Scheme [] ty)
+
+infixr 1 <::>
+
+(<=>) :: String -> Expr -> Binding
+(<=>) name = BindDefinition (Identifier name)
+
+infixr 1 <=>
 
 test :: SpecWith ()
 test = do
@@ -131,6 +141,69 @@ test = do
       isLeft (p [r| if True then |]) `shouldBe` True
       isLeft (p [r| if True then True |]) `shouldBe` True
 
+  describe "parse let in" $ do
+    it "indent checks" $ do
+      p
+        [r|
+      let x = 200 in x
+        |]
+        `shouldBe` Right
+          (ELetIn ["x" <=> ELiteral (LInt 200)] $ var "x")
+      p
+        [r|
+        let
+          x = 200
+           in
+          x
+        |]
+        `shouldBe` Right
+          (ELetIn ["x" <=> ELiteral (LInt 200)] $ var "x")
+      p
+        [r|
+          let
+            x = let
+                y = 5
+              in y
+            in
+            x
+        |]
+        `shouldBe` Right
+          ( ELetIn
+              [ "x" <=> ELetIn ["y" <=> ELiteral (LInt 5)] (var "y")
+              ]
+              $ var "x"
+          )
+    it "let in" $ do
+      p
+        [r|
+      let
+        x = 200
+        yeet = hello 1
+          2
+          3
+      in
+        func
+          (add 1
+          x)
+          y
+            |]
+        `shouldBe` Right
+          ( ELetIn
+              [ "x" <=> ELiteral (LInt 200),
+                "yeet"
+                  <=> ( (var "hello" `apply` ELiteral (LInt 1))
+                          `apply` ELiteral (LInt 2)
+                      )
+                  `apply` ELiteral (LInt 3)
+              ]
+              $ ( var "func"
+                    `apply` ( (var "add" `apply` ELiteral (LInt 1))
+                                `apply` var "x"
+                            )
+                )
+                `apply` var "y"
+          )
+
   describe "parse apply" $ do
     it "apply" $ do
       p "hello 1 2"
@@ -182,22 +255,23 @@ test = do
     it "simple declaration" $ do
       pd [r|foobar :: String -> Int |]
         `shouldBe` Right
-          ( Declaration (Identifier "foobar") (Scheme [] $ TString `TLambda` TInt)
+          ( Binding $ BindDeclaration (Identifier "foobar") (Scheme [] $ TString `TLambda` TInt)
           )
     it "simple definiton" $ do
-      pd [r|foobar = 200 |] `shouldBe` Right (Definition (Identifier "foobar") (ELiteral $ LInt 200))
+      pd [r|foobar = 200 |] `shouldBe` Right (Binding $ BindDefinition (Identifier "foobar") (ELiteral $ LInt 200))
       pd
         [r|
 foobar =
   hello
     world
   |]
-        `shouldBe` Right (Definition (Identifier "foobar") (var "hello" `apply` var "world"))
+        `shouldBe` Right (Binding $ BindDefinition (Identifier "foobar") (var "hello" `apply` var "world"))
       pd [r|foobar a b = 200 |]
         `shouldBe` Right
-          ( Definition
-              (Identifier "foobar")
-              ("a" ~~> "b" ~~> ELiteral (LInt 200))
+          ( Binding $
+              BindDefinition
+                (Identifier "foobar")
+                ("a" ~~> "b" ~~> ELiteral (LInt 200))
           )
     it "sad case :(" $ do
       isLeft
@@ -244,8 +318,8 @@ foobar a b =
         `shouldBe` Right
           ( Module
               (ModuleHeader $ Identifier "Foobar")
-              [ Declaration (Identifier "foobar") (Scheme [] (tvar "a" `TLambda` TInt)),
-                Definition (Identifier "foobar") ("x" ~~> ELiteral (LInt 200))
+              [ Binding $ BindDeclaration (Identifier "foobar") (Scheme [] (tvar "a" `TLambda` TInt)),
+                Binding $ BindDefinition (Identifier "foobar") ("x" ~~> ELiteral (LInt 200))
               ]
           )
 

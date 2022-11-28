@@ -14,7 +14,7 @@ import Types
 --   | ExportType (Identifier 'TypeName) Scheme
 
 accumulateDeclrs :: TypeEnv -> Declr -> TIMonad TypeEnv
-accumulateDeclrs (TypeEnv env) (Declaration name scheme) = do
+accumulateDeclrs (TypeEnv env) (Binding (BindDeclaration name scheme)) = do
   let schmM = Map.lookup name env
   case schmM of
     Just schm -> do
@@ -24,7 +24,7 @@ accumulateDeclrs (TypeEnv env) (Declaration name scheme) = do
       pure . TypeEnv . Map.insert name schm $ env
     Nothing ->
       pure . TypeEnv . Map.insert name scheme $ env
-accumulateDeclrs tenv@(TypeEnv env) (Definition name expr) = do
+accumulateDeclrs tenv@(TypeEnv env) (Binding (BindDefinition name expr)) = do
   let schmM = Map.lookup name env
   (subst, expTyp) <- ti tenv expr
   case schmM of

@@ -22,14 +22,19 @@ data Expr
   | EApply Expr Expr
   | EVariable (Identifier 'VariableName)
   | EIfElse Expr Expr Expr
+  | ELetIn [Binding] Expr
   deriving (Show, Eq)
 
 data Ctor = Ctor (Identifier 'CtorName) [Type]
   deriving (Show, Eq)
 
+data Binding
+  = BindDefinition (Identifier 'VariableName) Expr
+  | BindDeclaration (Identifier 'VariableName) Scheme
+  deriving (Show, Eq)
+
 data Declr
-  = Definition (Identifier 'VariableName) Expr
-  | Declaration (Identifier 'VariableName) Scheme
+  = Binding Binding
   | TypeDefinition (Identifier 'TypeName) Scheme
   | DataDefinition (Identifier 'TypeName) [Ctor]
   deriving (Show, Eq)
